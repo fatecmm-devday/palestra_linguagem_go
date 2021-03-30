@@ -54,12 +54,12 @@ func main() {
 
 ### O que foi criado durante a LIVE
 
-#### [Bruteforce em arquivos ZIP]()
+#### [Bruteforce em arquivos ZIP](https://github.com/fatecmm-devday/palestra_linguagem_go/tree/devday21/brute-force)
 
 Codigo escrito em Go para quebrar senhas de arquivos zip utilizando o metodo de brute force.
 ![Namaria quebrando pc](brute-force/assets/namaria.jpg?raw=true)
 
-### [Twitter Bot]()
+### [Twitter Bot](https://github.com/fatecmm-devday/palestra_linguagem_go/tree/devday21/twitter-bot)
 
 Aplicacao que busca todos os usuarios que twittaram uma determinada hashtag nos ultimos minutos. Baseado na lista de usuarios obtidos, um sera sorteado aleatoriamente.
 

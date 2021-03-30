@@ -2,140 +2,162 @@ package main
 
 import (
 	"bufio"
+	"flag"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"os"
 	"time"
 
+	"github.com/fatih/color"
 	"github.com/yeka/zip"
 )
 
 const (
-	zipPath             = "./assets/lerolero_protected.zip"
-	caminhoArquivoSenha = "./assets/rockyou.txt"
-	threadNumber        = 1
-	linesPerThread      = 15000
+//zipFile          = "./assets/lerolero_protected.zip"
+//passwordListFile = "./assets/rockyou.txt"
+//threadNumber   = 4
+//linesPerThread = 4000
 )
 
 func main() {
-	abrirArquivoZip()
+
+	zipPath := flag.String("zip", "", "Path to the zip file")
+	passwordListFile := flag.String("password-list", "", "Path to the password list file")
+	threads := flag.Int("threads", 1, "Number of threads")
+	linesPerThread := flag.Int("lines-thread", 1000, "Number of lines to be read by each thread")
+	timeout := flag.Int("timeout", 60, "Timeout for the proccess - in seconds")
+	flag.Parse()
+
+	unzipFile(*zipPath, *passwordListFile, *threads, *linesPerThread, *timeout)
 }
 
-func bruteForce(zipPath string, listaDeSenhas []string, canal chan<- string) {
-	//output := color.New(outputColor)
-	arquivo, err := zip.OpenReader(zipPath)
-
+func unzipFile(zipPath string, passwordListPath string, threads int, linesPerThread int, timeout int) {
+	r, err := zip.OpenReader(zipPath)
 	if err != nil {
-		panic("Error !")
+		log.Fatal(err)
 	}
+	defer r.Close()
 
-	defer arquivo.Close()
+	zipFile := r.File[0]
 
-	zipFile := arquivo.File[0]
+	if zipFile.IsEncrypted() {
+		fmt.Printf("The file is protected by password! Let's crack it down...\n")
+		ch := make(chan string)
+		pwdList := getPasswordList(passwordListPath)
+		initialIndex := 0
+		start := time.Now()
+		for i := 0; i < threads; i++ {
+			finalIndex := linesPerThread * (i + 1)
 
-	for _, value := range listaDeSenhas {
+			outputColor := RandomOutputColor(i)
+			output := color.New(outputColor)
+			output.Printf("Starting thread %d reading from line %d till line %d\n", i+1, initialIndex, finalIndex)
+			go bruteForce(zipPath, pwdList[initialIndex:finalIndex], outputColor, ch)
+
+			initialIndex = finalIndex + 1
+		}
+		fmt.Println("----------------------------------------------------")
+
+		color.Yellow("Cracking the password...")
+		fmt.Println()
+
+		select {
+		case pwd := <-ch:
+			fmt.Printf("\nThe password is:\"%v\"\n", pwd)
+			fmt.Printf("\nThe cracking process took %v \n", time.Since(start))
+		case <-time.After(time.Duration(timeout) * time.Second):
+			fmt.Printf("Timeout after: %d seconds \n", timeout)
+			fmt.Printf("Password not found :( \n")
+		}
+
+	} else {
+		fmt.Printf("No protection...\n")
+	}
+}
+
+func bruteForce(zipPath string, passwordList []string, outputColor color.Attribute, ch chan<- string) {
+	output := color.New(outputColor)
+	r, err := zip.OpenReader(zipPath)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer r.Close()
+
+	zipFile := r.File[0]
+
+	for _, value := range passwordList {
 		//	output.Printf("Trying to crack the file with password: %v \n", string(value))
 
 		zipFile.SetPassword(string(value))
 		_, err := zipFile.Open()
 
 		if err == nil {
-			fmt.Printf("Aeeeee encontrei a senha\n")
+			output.Printf("Ulala, we found the password!\n")
 
 			zipReader, err := zipFile.Open()
 
 			if err != nil {
-				panic("Erro")
+				log.Fatal(err)
 			}
 
 			buf, err := ioutil.ReadAll(zipReader)
 			if err != nil {
-				panic("Erro")
+				log.Fatal(err)
 			}
 
 			defer zipReader.Close()
 
-			fmt.Printf("Size of %v: %v byte(s)\n", zipFile.Name, len(buf))
+			output.Printf("Size of %v: %v byte(s)\n", zipFile.Name, len(buf))
 
-			canal <- string(value)
+			ch <- string(value)
 			break
 		}
 	}
 }
 
-func abrirArquivoZip() {
-	arquivos, err := zip.OpenReader(zipPath)
+func RandomOutputColor(threadId int) color.Attribute {
 
-	if err != nil {
-		panic(fmt.Sprintf("Um erro aconteceu: %v", err))
+	switch threadId {
+	case 0:
+		return color.FgHiBlue
+	case 1:
+		return color.FgRed
+	case 2:
+		return color.FgCyan
+	case 3:
+		return color.FgGreen
+	case 4:
+		return color.FgHiYellow
+	case 5:
+		return color.FgMagenta
 	}
 
-	defer arquivos.Close()
-
-	zipFile := arquivos.File[0] //Pega o primeiro objeto do array
-	if zipFile.IsEncrypted() {
-		listaSenhas := obterListaDeSenhas(caminhoArquivoSenha)
-		fmt.Printf("O arquivo esta protegido por senha. Bora quebrar issae... \n")
-
-		canal := make(chan string, 1)
-
-		start := time.Now()
-
-		linhaInicial := 0
-		for i := 0; i < threadNumber; i++ {
-			linhaFinal := linesPerThread * (i + 1)
-
-			//outputColor := RandomOutputColor(i)
-			//output := color.New(outputColor)
-			fmt.Printf("Iniciando a thread %d lendo da linha %d ate %d\n", i+1, linhaInicial, linhaFinal)
-			go bruteForce(zipPath, listaSenhas[linhaInicial:linhaFinal], canal)
-
-			linhaInicial = linhaFinal + 1
-		}
-
-		fmt.Println("----------------------------------------------------")
-
-		fmt.Printf("Quebrando a senha...\n")
-		fmt.Println()
-
-		select {
-		case senha := <-canal:
-			fmt.Printf("\nA senha eh:\"%v\"\n", senha)
-			fmt.Printf("A quebra da senha demorou: %v \n", time.Since(start))
-		case <-time.After(time.Duration(15) * time.Second):
-			//fmt.Printf("Timeout after: %d seconds \n", timeout)
-			fmt.Printf("Senha nao encontrada :( \n")
-		}
-
-	}
+	return color.FgBlue
 }
 
-func obterListaDeSenhas(caminhoArquivoSenha string) []string {
-	arquivo, erro := os.Open(caminhoArquivoSenha)
+func getPasswordList(passwordListFile string) []string {
+	file, err := os.Open(passwordListFile)
 
-	if erro != nil {
-		panic(fmt.Sprintf("Um erro aconteceu: %v", erro))
+	if err != nil {
+		log.Fatalf("failed to open")
 	}
 
-	defer arquivo.Close()
-
-	scanner := bufio.NewScanner(arquivo)
+	scanner := bufio.NewScanner(file)
 
 	scanner.Split(bufio.ScanLines)
-	var senhas []string
+	var text []string
 
 	for scanner.Scan() {
-		senhas = append(senhas, scanner.Text())
+		text = append(text, scanner.Text())
 	}
 
-	arquivoStatus, erro := os.Stat(caminhoArquivoSenha)
+	file.Close()
 
-	if erro != nil {
-		panic(fmt.Sprintf("Um erro aconteceu: %v", erro))
-	}
+	wordListStat, _ := os.Stat(passwordListFile)
+	fmt.Print("-----------------------------\n", "List file: ", wordListStat.Name(), "\nFile size: ", wordListStat.Size()/(1024), " KB\n")
+	fmt.Println("Total passwords: ", len(text))
+	fmt.Println("-----------------------------")
 
-	fmt.Printf("Status do arquivo => Nome: %v, Tamanho: %v KB \n", arquivoStatus.Name(), arquivoStatus.Size()/(1024))
-	fmt.Printf("Quantidade total de senhas no arquivo: %d \n", len(senhas))
-
-	return senhas
+	return text
 }

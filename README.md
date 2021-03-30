@@ -57,7 +57,6 @@ func main() {
 #### [Bruteforce em arquivos ZIP](https://github.com/fatecmm-devday/palestra_linguagem_go/tree/devday21/brute-force)
 
 Codigo escrito em Go para quebrar senhas de arquivos zip utilizando o metodo de brute force.
-![Namaria quebrando pc](brute-force/assets/namaria.jpg?raw=true)
 
 ### [Twitter Bot](https://github.com/fatecmm-devday/palestra_linguagem_go/tree/devday21/twitter-bot)
 
@@ -102,3 +101,5 @@ O [WSL](https://www.treinaweb.com.br/blog/o-que-e-windows-subsystem-for-linux-ws
 
 - [Curso completo de Go da Ellen Korbes](https://www.youtube.com/channel/UCxD5EE0H7qOhRr0tIVsOZPQ)
 - [Linux Tips](https://www.youtube.com/user/linuxtipscanal)
+
+![Namaria quebrando pc](brute-force/assets/namaria.jpg?raw=true)

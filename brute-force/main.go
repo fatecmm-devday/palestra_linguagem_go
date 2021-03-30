@@ -13,13 +13,6 @@ import (
 	"github.com/yeka/zip"
 )
 
-const (
-//zipFile          = "./assets/lerolero_protected.zip"
-//passwordListFile = "./assets/rockyou.txt"
-//threadNumber   = 4
-//linesPerThread = 4000
-)
-
 func main() {
 
 	zipPath := flag.String("zip", "", "Path to the zip file")

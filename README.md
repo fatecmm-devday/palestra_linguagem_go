@@ -1,0 +1,3 @@
+- WSL ->
+- oh my zshel ->
+- have i been pwned ->
